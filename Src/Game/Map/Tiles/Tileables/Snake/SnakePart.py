@@ -1,0 +1,78 @@
+from abc import ABC
+
+from Src.Game.Map.Tiles.Tileables.ITileable import ITileable
+from Src.Game.Map.Tiles.Tileables.TileColors import TileColors
+
+
+class SnakePart(ITileable, ABC):
+    def __init__(self, name, tile):
+        self.name = name
+        self.next = None
+        self.tile = tile
+        if self.tile is not None:
+            tile.set_content(self)
+
+    def get_name(self):
+        return self.name
+
+    def get_content(self):
+        return self.next
+
+    def get_tile(self):
+        return self.tile
+
+    def get_next(self):
+        return self.next
+
+    def set_next(self, next):
+        self.next = next
+
+    def get_position(self):
+        return self.tile.get_position()
+
+    def get_last(self):
+        if not self.next:
+            return self
+        else:
+            return self.get_next().get_last()
+
+    def get_second_to_last(self):
+        if not self.next:
+            print("second to last could not be found")
+            return self
+        elif not self.next.next:
+            return self
+        else:
+            return self.get_next().get_second_to_last()
+
+    def interact(self, snake):
+        snake.die(self)
+        if not self.is_part_of_snake(snake):
+            self.tile = snake.head.tile
+            snake.head.tile.set_content(self)
+
+    def is_part_of_snake(self, snake):
+        """
+        Determine if this SnakePart is part of the given snake.
+
+        :param snake: The snake object whose parts we want to check.
+        :return: True if this part belongs to the snake, False otherwise.
+        """
+        current = snake.head
+        while current is not None:
+            if current == self:
+                return True
+            current = current.next
+        return False
+
+    def to_string(self):
+        pass
+
+    def to_int(self):
+        pass
+
+    def to_numbers(self):
+        return TileColors.SNAKE_BODY.value
+
+    def is_deadly(self):
+        return True
