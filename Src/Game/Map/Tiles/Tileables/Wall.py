@@ -6,7 +6,8 @@ from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
 class Wall(ITileable):
     def __init__(self, tile):
         self.name = TileNames.WALL
-        tile.set_content(self)
+        if tile is not None:
+            tile.set_content(self)
         self.tile = tile
 
     def get_name(self):
@@ -19,8 +20,9 @@ class Wall(ITileable):
         return self.tile
 
     def interact(self, snake):
-        snake.die()
+        snake.death_observer.notify()
         Wall(snake.head.tile)
+        snake.head.tile = None
         return
 
     def to_string(self):

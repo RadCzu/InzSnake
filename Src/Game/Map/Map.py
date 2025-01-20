@@ -131,7 +131,7 @@ class Map:
         data = np.array(norm_map)
         return data
 
-    def get_playable_area(self, ):
+    def get_playable_area(self):
         num_rows = len(self.state)
         num_cols = len(self.state[0]) if num_rows > 0 else 0
 

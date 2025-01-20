@@ -1,5 +1,7 @@
 from Src.Game.Agents.IAgent import IAgent
+from Src.Game.Agents.TrainingAIAgent import TrainingAIAgent
 from Src.Game.Game import Game
+from Src.Game.Interfaces.Observer import Observer
 from Src.Game.Map.MapFactory import MapFactory
 
 
@@ -39,31 +41,57 @@ class Main:
 
     def run(self):
         self.game = self.set_up()
-        while self.game.over is False:
+        living = len(self.agents)
+        while self.game.over is False and living > 0:
+            living = len(self.agents)
             for agent in self.agents:
                 agent.snake.moved = False
             if self.game_length != 0 and self.turn >= self.game_length:
                 self.game.game_over()
             self.turn += 1
+
+            longest_len = 0
+            longest_agent = 0
             for agent in self.agents:
+                if agent.snake.length > longest_len:
+                    longest_len = agent.snake.length
+                    longest_agent = agent
+                if agent.snake.dead:
+                    living = living - 1
+                    continue
                 agent.make_decision(self.game)
+            if isinstance(longest_agent, TrainingAIAgent):
+                longest_agent.on_winning.notify()
+            self.game.snakeEliminator.notify()
+            self.game.snakeEliminator = Observer()
 
         for agent in self.agents:
             agent.on_game_over(self.game)
 
     def run_with_print(self):
         self.game = self.set_up()
-
-        while self.game.over is False:
+        living = len(self.agents)
+        while self.game.over is False and living > 0:
+            living = len(self.agents)
             for agent in self.agents:
                 agent.snake.moved = False
-            self.game.print_state()
+            if self.game_length != 0 and self.turn >= self.game_length:
+                self.game.game_over()
+            self.turn += 1
             for i in range(len(self.agents)):
+                if self.agents[i].snake.dead:
+                    living = living - 1
+                    continue
                 q_vals = self.agents[i].make_decision(self.game)
                 print(f"Agent {i}:")
                 print("Q Values: ")
                 print(q_vals)
                 print(self.agents[i].get_cookies())
+            self.game.snakeEliminator.notify()
+            self.game.snakeEliminator = Observer()
 
         for agent in self.agents:
             agent.on_game_over(self.game)
+
+
+

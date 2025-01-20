@@ -19,6 +19,7 @@ class OutOfBounds(ITileable):
         return self.tile
 
     def interact(self, snake):
+        snake.death_observer.notify()
         return
 
     def to_string(self):

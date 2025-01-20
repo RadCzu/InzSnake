@@ -1,3 +1,4 @@
+from Src.Game.Map.Tiles.Tileables.Snake.Snake import Snake
 from Src.Game.Map.Tiles.Tileables.Snake.SnakePart import SnakePart
 from Src.Game.Map.Tiles.Tileables.TileColors import TileColors
 from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
@@ -5,10 +6,9 @@ from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
 
 class SnakeHead(SnakePart):
     def __init__(self, tile, snake):
-        super().__init__(TileNames.SNAKE_HEAD, tile)
+        super().__init__(TileNames.SNAKE_HEAD, tile, snake)
         self.direction = [-1, 0]
         self.previous_direction = [0, 0]
-        self.snake = snake
 
     def get_direction(self):
         return self.direction
@@ -16,13 +16,25 @@ class SnakeHead(SnakePart):
     def set_direction(self, direction):
         self.direction = direction
 
-    def interact(self, snake):
-        snake.die(self)
-        if not self.is_part_of_snake(snake):
-            self.tile = snake.head.tile
-            snake.head.tile.set_content(self)
-            if self.snake.moved:
-                self.snake.die()
+    def interact(self, snake: Snake):
+        if not self.snake.moved:
+            if self.next() is not None:
+                snake.death_observer.notify()
+                snake.head.tile.set_content(self)
+                snake.head.tile = None
+            else:
+                dir_dif = (snake.head.direction[0] - self.snake.head.direction[0], snake.head.direction[1] - self.snake.head.direction[1])
+                if dir_dif == (0, 0):
+                    snake.death_observer.notify()
+                    self.snake.death_observer.notify()
+                    self.snake.head.tile = None
+                    snake.head.tile = None
+                return
+        else:
+            self.snake.death_observer.notify()
+            self.snake.head.tile = None
+            snake.death_observer.notify()
+            snake.head.tile = None
 
     def to_string(self):
         return "S"

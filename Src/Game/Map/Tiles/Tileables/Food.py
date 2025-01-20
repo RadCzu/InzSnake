@@ -7,7 +7,8 @@ from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
 class Food(ITileable):
     def __init__(self, tile):
         self.name = TileNames.FOOD
-        tile.set_content(self)
+        if tile is not None:
+            tile.set_content(self)
         self.tile = tile
         self.on_eaten = Observer()
 

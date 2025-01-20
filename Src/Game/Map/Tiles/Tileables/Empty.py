@@ -7,7 +7,8 @@ from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
 class Empty(ITileable):
     def __init__(self, tile):
         self.name = TileNames.EMPTY
-        tile.set_content(self)
+        if tile is not None:
+            tile.set_content(self)
         self.tile = tile
 
     def get_name(self):

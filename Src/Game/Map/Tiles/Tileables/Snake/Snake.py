@@ -17,6 +17,7 @@ class Snake():
         self.length = 1
         self.score = 0
         self.moved = False
+        self.dead = False
 
     def move(self):
         self.move_observer.notify()
@@ -98,7 +99,6 @@ class Snake():
                 return distance
 
     def die(self):
-        self.death_observer.notify()
         checked = self.head
         while checked.next is not None:
             Empty(checked.next.tile)

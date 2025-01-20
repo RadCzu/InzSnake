@@ -4,6 +4,7 @@ from typing import List
 
 import numpy as np
 
+from Src.Game.Interfaces.Observer import Observer
 from Src.Game.Map.Map import Map
 from Src.Game.Map.Tiles.Tileables.Empty import Empty
 from Src.Game.Map.Tiles.Tileables.Food import Food
@@ -14,11 +15,12 @@ class Game():
     def __init__(self, map, snake_positions, food_density=0.1):
         self.map: Map = map
         self.snakes = []
+        self.snakeEliminator = Observer()
         for snake_position in snake_positions:
             snake = Snake(x=snake_position[0], y=snake_position[1], map=self.map)
             self.snakes.append(snake)
             snake.food_observer.subscribe(self.spawn_random_food)
-            snake.death_observer.subscribe(self.stop)
+            snake.death_observer.subscribe(lambda: self.snakeEliminator.subscribe(lambda: self.kill_snake(snake)))
         self.food_list = []
         self.active = False
         self.over = False
@@ -82,6 +84,9 @@ class Game():
 
     def stop(self):
         self.active = False
+
+    def kill_snake(self, snake):
+        snake.die()
 
     def game_over(self):
         self.over = True

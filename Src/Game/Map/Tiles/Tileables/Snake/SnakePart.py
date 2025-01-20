@@ -5,12 +5,13 @@ from Src.Game.Map.Tiles.Tileables.TileColors import TileColors
 
 
 class SnakePart(ITileable, ABC):
-    def __init__(self, name, tile):
+    def __init__(self, name, tile, snake):
         self.name = name
         self.next = None
         self.tile = tile
         if self.tile is not None:
             tile.set_content(self)
+        self.snake = snake
 
     def get_name(self):
         return self.name
@@ -46,10 +47,15 @@ class SnakePart(ITileable, ABC):
             return self.get_next().get_second_to_last()
 
     def interact(self, snake):
-        snake.die(self)
+        if not self.snake.moved and self.next is not None:
+            snake.death_observer.notify()
         if not self.is_part_of_snake(snake):
             self.tile = snake.head.tile
             snake.head.tile.set_content(self)
+            snake.head.tile = None
+        else:
+            snake.death_observer.notify()
+            snake.head.tile = None
 
     def is_part_of_snake(self, snake):
         """
@@ -58,12 +64,7 @@ class SnakePart(ITileable, ABC):
         :param snake: The snake object whose parts we want to check.
         :return: True if this part belongs to the snake, False otherwise.
         """
-        current = snake.head
-        while current is not None:
-            if current == self:
-                return True
-            current = current.next
-        return False
+        return snake == self.snake
 
     def to_string(self):
         pass
