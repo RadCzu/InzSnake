@@ -1,7 +1,7 @@
 
-from Src.Game.Map.Tiles.Tileables.ITileable import ITileable
 from Src.Game.Map.Tiles.Tileables.TileColors import TileColors
 from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
+from Src.Game.Map.Tiles.Tileables.ITileable import ITileable
 
 
 class Empty(ITileable):

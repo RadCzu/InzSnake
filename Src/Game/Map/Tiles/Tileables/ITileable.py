@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-
 class ITileable(ABC):
     @abstractmethod
     def get_name(self):
@@ -15,7 +14,7 @@ class ITileable(ABC):
         pass
 
     @abstractmethod
-    def interact(self, snake: Snake):
+    def interact(self, snake):
         pass
 
     @abstractmethod

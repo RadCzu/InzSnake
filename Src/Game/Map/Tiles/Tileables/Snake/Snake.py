@@ -1,11 +1,11 @@
 from Src.Game.Interfaces.Observer import Observer
-from Src.Game.Map.Tiles.Tile import Tile
+
 from Src.Game.Map.Tiles.Tileables.Empty import Empty
 from Src.Game.Map.Tiles.Tileables.Snake.SnakeBody import SnakeBody
 from Src.Game.Map.Tiles.Tileables.Snake.SnakeHead import SnakeHead
 
 
-class Snake():
+class Snake:
     def __init__(self, x, y, map):
         self.map = map
         self.head = SnakeHead(tile=self.map.get_tile(x, y), snake=self)
@@ -35,7 +35,6 @@ class Snake():
 
         if last_part != self.head:
             self.map.move_tile_by_coordinates(x1=last_part.tile.x, y1=last_part.tile.y, x2=head_tile.x, y2=head_tile.y)
-
             second_to_last = self.head.get_second_to_last()
 
             if second_to_last == self.head:
@@ -45,13 +44,12 @@ class Snake():
             last_part.set_next(self.head.next)
             self.head.set_next(last_part)
             second_to_last.set_next(None)
-
         content.interact(self)
         self.moved = True
 
     def grow_on_tile(self, tile):
         last_part = self.head.get_last()
-        last_part.set_next(SnakeBody(tile))
+        last_part.set_next(SnakeBody(tile, self))
         self.food_observer.notify()
         self.length += 1
 
@@ -62,7 +60,7 @@ class Snake():
         my_x, my_y = self.head.get_position()
         distance = 0
         while True:
-            tile: Tile = self.map.get_tile(my_x, my_y + distance + 1)
+            tile = self.map.get_tile(my_x, my_y + distance + 1)
             if not tile.content.is_deadly():
                 distance = distance + 1
             else:
@@ -72,7 +70,7 @@ class Snake():
         my_x, my_y = self.head.get_position()
         distance = 0
         while True:
-            tile: Tile = self.map.get_tile(my_x, my_y - distance - 1)
+            tile = self.map.get_tile(my_x, my_y - distance - 1)
             if not tile.content.is_deadly():
                 distance = distance + 1
             else:
@@ -82,7 +80,7 @@ class Snake():
         my_x, my_y = self.head.get_position()
         distance = 0
         while True:
-            tile: Tile = self.map.get_tile(my_x - distance - 1, my_y)
+            tile = self.map.get_tile(my_x - distance - 1, my_y)
             if not tile.content.is_deadly():
                 distance = distance + 1
             else:
@@ -92,7 +90,7 @@ class Snake():
         my_x, my_y = self.head.get_position()
         distance = 0
         while True:
-            tile: Tile = self.map.get_tile(my_x + distance + 1, my_y)
+            tile = self.map.get_tile(my_x + distance + 1, my_y)
             if not tile.content.is_deadly():
                 distance = distance + 1
             else:
@@ -103,4 +101,5 @@ class Snake():
         while checked.next is not None:
             Empty(checked.next.tile)
             checked = checked.next
+        self.dead = True
 

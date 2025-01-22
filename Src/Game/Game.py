@@ -41,8 +41,6 @@ class Game():
                 if isinstance(tile.get_content(), Empty):
                     empty_tiles.append(tile)
         if not empty_tiles:
-            print("win")
-            self.stop()
             return None
         return random.choice(empty_tiles)
 

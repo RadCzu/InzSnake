@@ -5,7 +5,7 @@ from Src.Game.Map.Tiles.Tileables.TileNames import TileNames
 
 class OutOfBounds(ITileable):
     def __init__(self, tile):
-        self.name = TileNames.EMPTY
+        self.name = TileNames.OUT_OF_BOUNDS
         tile.set_content(self)
         self.tile = tile
 
@@ -20,10 +20,13 @@ class OutOfBounds(ITileable):
 
     def interact(self, snake):
         snake.death_observer.notify()
+        OutOfBounds(snake.head.tile)
+        snake.head.tile = None
+        snake.dead = True
         return
 
     def to_string(self):
-        return ""
+        return "O"
 
     def to_int(self):
         return 5

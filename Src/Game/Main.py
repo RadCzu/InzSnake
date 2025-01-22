@@ -19,7 +19,6 @@ class Main:
             the_agent: IAgent = agent[0]
             self.agents.append(the_agent)
             self.agent_positions.append((agent[1], agent[2]))
-            the_agent.on_init(self.game)
         self.game_length = game_length
         self.turn = 0
         self.game = None
@@ -34,34 +33,47 @@ class Main:
             the_map = MapFactory().build_box_map(self.map_params[0], self.map_params[1])
 
         game = Game(the_map, self.agent_positions, self.food_density)
+        for i in range(len(game.snakes)):
+            self.agents[i].set_snake(game.snakes[i])
         game.begin()
-        for snake in game.snakes:
-            snake.death_observer.subscribe(self.game.game_over)
         return game
 
     def run(self):
         self.game = self.set_up()
+        for agent in self.agents:
+            agent.on_init(self.game)
         living = len(self.agents)
+
         while self.game.over is False and living > 0:
             living = len(self.agents)
             for agent in self.agents:
                 agent.snake.moved = False
-            if self.game_length != 0 and self.turn >= self.game_length:
+            if (self.game_length != 0 and self.turn >= self.game_length) or living == 0:
                 self.game.game_over()
             self.turn += 1
 
             longest_len = 0
-            longest_agent = 0
+            longest_agent = None
             for agent in self.agents:
                 if agent.snake.length > longest_len:
                     longest_len = agent.snake.length
-                    longest_agent = agent
+                if agent.snake.head.tile is None and agent.snake.dead == False:
+                    here = "here"
+                    self.game.map.print_map()
                 if agent.snake.dead:
                     living = living - 1
                     continue
-                agent.make_decision(self.game)
+                else:
+                    agent.make_decision(self.game)
+                    self.game.update(agent.snake)
+                    if isinstance(agent, TrainingAIAgent):
+                        agent.add_brain_experience(agent.state_hold, agent.action_hold, agent.previous_reward, agent.done_hold)
+                        agent.previous_reward = agent.cookies
+
             if isinstance(longest_agent, TrainingAIAgent):
+
                 longest_agent.on_winning.notify()
+
             self.game.snakeEliminator.notify()
             self.game.snakeEliminator = Observer()
 
@@ -70,28 +82,42 @@ class Main:
 
     def run_with_print(self):
         self.game = self.set_up()
+        for agent in self.agents:
+            agent.on_init(self.game)
         living = len(self.agents)
         while self.game.over is False and living > 0:
+            self.game.map.print_map()
             living = len(self.agents)
             for agent in self.agents:
                 agent.snake.moved = False
             if self.game_length != 0 and self.turn >= self.game_length:
                 self.game.game_over()
             self.turn += 1
+
+            longest_len = 0
+            longest_agent = None
+
             for i in range(len(self.agents)):
+                if self.agents[i].snake.length > longest_len:
+                    agent = self.agents[i]
+                    longest_len = agent.snake.length
+                    longest_agent = agent
                 if self.agents[i].snake.dead:
                     living = living - 1
                     continue
-                q_vals = self.agents[i].make_decision(self.game)
-                print(f"Agent {i}:")
-                print("Q Values: ")
-                print(q_vals)
-                print(self.agents[i].get_cookies())
+                else:
+                    q_vals = self.agents[i].make_decision(self.game)
+                    self.game.update(self.agents[i].snake)
+                    print(f"Agent {i}:")
+                    print("Q Values: ")
+                    print(q_vals)
+
+            if isinstance(longest_agent, TrainingAIAgent):
+                longest_agent.on_winning.notify()
+
             self.game.snakeEliminator.notify()
             self.game.snakeEliminator = Observer()
 
         for agent in self.agents:
             agent.on_game_over(self.game)
-
-
-
+        self.game.map.print_map()

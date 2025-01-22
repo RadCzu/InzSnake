@@ -56,6 +56,7 @@ class SnakePart(ITileable, ABC):
         else:
             snake.death_observer.notify()
             snake.head.tile = None
+        snake.dead = True
 
     def is_part_of_snake(self, snake):
         """

@@ -12,15 +12,7 @@ class IAgent(ABC):
         self.snake = snake
 
     @abstractmethod
-    def get_cookies(self):
-        pass
-
-    @abstractmethod
     def make_decision(self, game: Game):
-        pass
-
-    @abstractmethod
-    def validate(self, game: Game):
         pass
 
     @abstractmethod

@@ -5,11 +5,9 @@ from typing import List
 import torch
 
 from Src.AI.NeuralNetworks.SnakeBrain import SnakeBrain
-from IAgent import IAgent
-from Src.AI.Training.LearningExperience import LearningExperience
-from Src.AI.Training.Move_picking.PickBest import PickBest
-from Src.AI.Training.Reward import Reward
-from Src.Game.Interfaces.Observer import Observer
+from Src.Game.Agents.IAgent import IAgent
+from Src.Game.Agents.Move_picking.PickBest import PickBest
+
 
 class AIAgent(IAgent):
     def __init__(self, brain_network, move_memory=20, move_picking_strategy=None):
@@ -24,6 +22,7 @@ class AIAgent(IAgent):
         self.move_memory = move_memory
         self.has_eaten = False
         self.move_history = []
+        self.clear_history()
         self.previous_move = None
 
     def on_init(self, game):

@@ -7,7 +7,7 @@ import torch
 from Src.AI.NeuralNetworks.SnakeBrain import SnakeBrain
 from Src.Game.Agents.AIAgent import AIAgent
 from Src.AI.Training.LearningExperience import LearningExperience
-from Src.AI.Training.Move_picking.PickBest import PickBest
+from Src.Game.Agents.Move_picking.PickBest import PickBest
 from Src.AI.Training.Reward import Reward
 from Src.Game.Interfaces.Observer import Observer
 
@@ -15,7 +15,7 @@ from Src.Game.Interfaces.Observer import Observer
 class TrainingAIAgent(AIAgent):
 
     def __init__(self, brain_network, experience_manager=None, reward_decay=1., move_memory=20, move_picking_strategy=None):
-        super().__init__()
+        super().__init__(brain_network, move_memory, move_picking_strategy)
         self.brain_network: SnakeBrain = brain_network
 
         if move_picking_strategy is None:
@@ -31,10 +31,15 @@ class TrainingAIAgent(AIAgent):
         self.move_history = []
         self.clear_history()
         self.previous_reward = 0
+
+        self.state_hold = None
+        self.action_hold = None
+        self.done_hold = False
+
         self.on_winning = Observer()
 
     def on_init(self, game):
-        death_reward = Reward(-30, self)
+        death_reward = Reward(-10, self)
         self.snake.death_observer.subscribe(death_reward.apply_reward)
         self.snake.death_observer.subscribe(self.clear_history)
         move_reward = Reward(-1, self)
@@ -42,8 +47,8 @@ class TrainingAIAgent(AIAgent):
         score_reward = Reward(10, self)
         self.snake.score_observer.subscribe(score_reward.apply_reward)
         self.snake.score_observer.subscribe(self.on_eat)
-        winner_reward = Reward(1, self)
-        self.on_winning.subscribe(winner_reward.apply_reward())
+        winner_reward = Reward(0.5, self)
+        self.on_winning.subscribe(winner_reward.apply_reward)
 
     def on_eat(self):
         self.has_eaten = True
@@ -96,6 +101,7 @@ class TrainingAIAgent(AIAgent):
         # Get the index of the move with the maximum Q-value
         best_move_index = self.move_picking_strategy.pick_move(Q_values)
         action = best_move_index
+        print(action)
 
         # Select the best move direction
         best_move = possible_moves[best_move_index]
@@ -125,10 +131,12 @@ class TrainingAIAgent(AIAgent):
                  move_tensor,
                  )
 
-        self.add_brain_experience(state, possible_moves[action], self.previous_reward, done)
-        self.previous_reward = self.cookies
+        self.state_hold = state
+        self.action_hold = possible_moves[action]
+        self.done_hold = done
 
         if game.over:
+            self.snake.dead = True
             map_64_tensor, fragment_tensor, death_tensor, closest_food_tensor, history_tensor = self.get_game_data(game)
             move_dir = [0, 0, 0, 0]
             move_tensor = torch.tensor(move_dir, dtype=torch.float32).unsqueeze(0)
@@ -141,7 +149,6 @@ class TrainingAIAgent(AIAgent):
                      )
             self.add_brain_experience(state, move_dir, self.cookies, True)
             self.cookies = 0
-
         return Q_values
 
     def add_to_history(self, move: List):
@@ -167,15 +174,11 @@ class TrainingAIAgent(AIAgent):
             self.move_history.pop(len(self.move_history) - 1)
             self.move_history.insert(0, (move[0], move[1], move[2], move[3], 1, 1))
 
-
-    def validate(self, game):
-        final_score = self.snake.score() / (game.map.get_playable_area())
-        return final_score
-
     def on_game_over(self, game):
         return
 
     def reward(self, cookies):
+        #print(f"reward:{self.cookies} reward appiled: {cookies}")
         self.cookies += cookies
 
     def get_game_data(self, game):

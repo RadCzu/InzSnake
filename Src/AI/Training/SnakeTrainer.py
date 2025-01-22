@@ -9,7 +9,7 @@ from Src.Game.Agents.TrainingAIAgent import TrainingAIAgent
 
 
 class SnakeTrainer:
-    def __init__(self, network, experience_manager, batch_size=64, device='cpu', gamma=0.95, learning_rate=0.0001, learning_damp_frequency=500):
+    def __init__(self, network, experience_manager, batch_size=64, device='cpu', gamma=0.95, learning_rate=0.0025, learning_damp_frequency=500):
         self.experience_manager = experience_manager
         self.network = network
         self.batch_size = batch_size

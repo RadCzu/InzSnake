@@ -5,7 +5,7 @@ class Tile:
     def __init__(self, x, y, content):
         self.x = x
         self.y = y
-        self.content : ITileable | None = content
+        self.content: ITileable | None = content
 
     def set_content(self, content):
         self.content = content
