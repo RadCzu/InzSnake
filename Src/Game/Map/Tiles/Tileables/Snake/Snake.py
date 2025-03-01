@@ -18,6 +18,7 @@ class Snake:
         self.score = 0
         self.moved = False
         self.dead = False
+        self.death_observer.subscribe(lambda: setattr(self, "dead", True))
 
     def move(self):
         self.move_observer.notify()

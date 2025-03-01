@@ -22,7 +22,6 @@ class OutOfBounds(ITileable):
         snake.death_observer.notify()
         OutOfBounds(snake.head.tile)
         snake.head.tile = None
-        snake.dead = True
         return
 
     def to_string(self):

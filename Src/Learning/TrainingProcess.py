@@ -8,6 +8,8 @@ from Src.AI.NeuralNetworks.SnakeBrain import SnakeBrain
 from Src.Game.Agents.AIAgent import AIAgent
 from Src.Game.Agents.Move_picking.PickBest import PickBest
 from Src.Game.Agents.Move_picking.PickRandom import PickWeightedRandom, PickScaledRandom
+from Src.Game.Agents.Move_picking.PickTrueRandom import PickTrueRandom
+from Src.Game.Agents.ONNXTestAgent import ONNXTestAgent
 from Src.Game.Agents.TrainingAIAgent import TrainingAIAgent
 from Src.AI.Training.LearningExperience import LearningExperience
 from Src.Game.Agents.Move_picking.PickDynamic import PickDynamic
@@ -38,14 +40,37 @@ class AITrainingProcess:
                                     experience_manager=self.experience_manager,
                                     batch_size=16,
                                     device=self.device,
-                                    gamma=0.9,
-                                    learning_damp_frequency=0)
+                                    gamma=0.95, learning_damp_frequency=0)
 
     def _initialize_score_file(self):
         if not os.path.exists(self.score_file):
             with open(self.score_file, mode='w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(['Episode', 'Average Score'])
+
+    def _get_last_episode(self):
+        """
+        Retrieves the last episode number from the score file.
+
+        Returns:
+            int: The last episode number, or 0 if the file is empty or does not exist.
+        """
+        if not os.path.exists(self.score_file):
+            return 0
+
+        with open(self.score_file, mode='r', newline='') as file:
+            reader = csv.reader(file)
+            next(reader, None)
+
+            last_episode = 0
+            for row in reader:
+                if row:
+                    try:
+                        last_episode = int(row[0])
+                    except ValueError:
+                        continue
+
+        return last_episode
 
     def _load_brain(self):
         try:
@@ -63,11 +88,12 @@ class AITrainingProcess:
                 print(f"Weights: {param.data}")
                 print(f"Gradients: {param.grad}")
 
-    def train(self, num_episodes=5000, game_length=100, avg_reset=100):
+    def train(self, num_episodes=5000, game_length=100, avg_reset=100, data_sample_frequency=10):
         averages = []
         total_score = 0
         global_score = []
         high_score = 0
+        previous_episode = self._get_last_episode()
 
         for episode in range(num_episodes):
             # Generate random map parameters and type
@@ -78,6 +104,10 @@ class AITrainingProcess:
             if map_type == "cross":
                 plus_size = random.randint(1, int(min(rand_X, rand_Y) * 0.4))
                 map_params = (rand_X, rand_Y, plus_size)
+            elif map_type == "grid":
+                rand_X = random.randrange(7, 34, 2)
+                rand_Y = random.randrange(7, 34, 2)
+                map_params = (rand_X, rand_Y)
             else:
                 map_params = (rand_X, rand_Y)
 
@@ -103,9 +133,10 @@ class AITrainingProcess:
                 total_score = 0
                 print(f"High score: {high_score} =====================================")
 
+            if episode != 0 and episode % data_sample_frequency == 0:
                 with open(self.score_file, mode='a', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow([episode + 1, np.average(global_score)])
+                    writer.writerow([episode + previous_episode, np.average(global_score)])
 
             # Aggregate scores for all agents
             episode_score = (sum(agent[0].snake.score for agent in agents) / len(agents))
@@ -134,6 +165,10 @@ class AITrainingProcess:
         if map_type == "cross":
             plus_size = random.randint(1, int(min(rand_X, rand_Y) * 0.4))
             map_params = (rand_X, rand_Y, plus_size)
+        elif map_type == "grid":
+            rand_X = random.randrange(7, 34, 2)
+            rand_Y = random.randrange(7, 34, 2)
+            map_params = (rand_X, rand_Y)
         else:
             map_params = (rand_X, rand_Y)
 
@@ -152,11 +187,12 @@ class AITrainingProcess:
         game.run_with_print()
 
 
-    def train_single(self, num_episodes=5000, game_length=100, avg_reset=100):
+    def train_single(self, num_episodes=5000, game_length=100, avg_reset=100, data_sample_frequency=10):
         averages = []
         total_score = 0
         global_score = []
         high_score = 0
+        previous_episode = self._get_last_episode()
 
         for episode in range(num_episodes):
             # Generate random map parameters and type
@@ -167,6 +203,10 @@ class AITrainingProcess:
             if map_type == "cross":
                 plus_size = random.randint(1, int(min(rand_X, rand_Y) * 0.4))
                 map_params = (rand_X, rand_Y, plus_size)
+            elif map_type == "grid":
+                rand_X = random.randrange(7, 34, 2)
+                rand_Y = random.randrange(7, 34, 2)
+                map_params = (rand_X, rand_Y)
             else:
                 map_params = (rand_X, rand_Y)
 
@@ -189,9 +229,10 @@ class AITrainingProcess:
                 total_score = 0
                 print(f"High score: {high_score} =====================================")
 
+            if episode != 0 and episode % data_sample_frequency == 0:
                 with open(self.score_file, mode='a', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow([episode + 1, np.average(global_score)])
+                    writer.writerow([episode + previous_episode, np.average(global_score)])
 
             # Aggregate scores for all agents
             episode_score = (sum(agent[0].snake.score for agent in agents) / len(agents))
@@ -218,6 +259,8 @@ class AITrainingProcess:
         map_type = random.choice(["cross", "grid", "box", "box", "box", "box"])
 
         if map_type == "cross":
+            rand_X = random.randrange(7, 34, 2)
+            rand_Y = random.randrange(7, 34, 2)
             plus_size = random.randint(1, int(min(rand_X, rand_Y) * 0.4))
             map_params = (rand_X, rand_Y, plus_size)
         else:
@@ -233,3 +276,145 @@ class AITrainingProcess:
         # Initialize the game with multiple agents
         game = Main(map_params, map_type, agents, game_length, 0.1)
         game.run_with_print()
+
+    def test_onnx_game(self, game_length=100,
+                       onnx_model_path="C:\\Users\\Radek\\Radek\\radek rc\\Uczelniane\\IV ROK\\InzSnake\\pythonProject\\Src\\Data\\Models\\FoodEnd\\snake_brain.onnx"):
+        rand_X = random.randint(7, 12)
+        rand_Y = random.randint(7, 12)
+        map_type = random.choice(["cross", "grid", "box", "box", "box", "box"])
+
+        if map_type == "cross":
+            rand_X = random.randrange(7, 34, 2)
+            rand_Y = random.randrange(7, 34, 2)
+            plus_size = random.randint(1, int(min(rand_X, rand_Y) * 0.4))
+            map_params = (rand_X, rand_Y, plus_size)
+        else:
+            map_params = (rand_X, rand_Y)
+
+        # Define agents with initial positions
+        agents = [
+            (
+                ONNXTestAgent(self.brain, onnx_model_path, 20, move_picking_strategy=PickBest()), (rand_X + 2) // 2,
+                (rand_Y + 2) // 4),
+            (
+                AIAgent(self.brain, 20, move_picking_strategy=PickBest()), (rand_X + 2) // 2,
+                (3 * (rand_Y + 2)) // 4)
+        ]
+
+        # Initialize the game with multiple agents
+        game = Main(map_params, map_type, agents, game_length, 0.1)
+        game.run_with_print()
+
+    def movement_training(self, num_episodes=10000, game_length=150, avg_reset=100, data_sample_frequency=10):
+        averages = []
+        total_score = 0
+        global_score = []
+        high_score = 0
+        previous_episode = self._get_last_episode()
+
+        for episode in range(num_episodes):
+            # Generate random map parameters and type
+            rand_X = random.randint(7, 32)
+            rand_Y = random.randint(7, 32)
+            map_type = "box"
+            map_params = (rand_X, rand_Y)
+
+            # Define agents with initial positions
+            agents = [
+                (TrainingAIAgent(self.brain, self.experience_manager, 0.0, move_picking_strategy=PickDynamic()),
+                 rand_X // 2,
+                 rand_Y // 2),
+            ]
+
+            # Initialize the game with multiple agents
+            game = Main(map_params, map_type, agents, game_length, 0.1)
+            game.run()
+
+            self.trainer.train()
+
+            if episode != 0 and episode % avg_reset == 0:
+                averages.append(total_score / avg_reset)
+                self.brain.save(self.save_path, self.snapshot_name)
+                total_score = 0
+                print(f"High score: {high_score} =====================================")
+
+            if episode != 0 and episode % data_sample_frequency == 0:
+                with open(self.score_file, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([episode + previous_episode, np.average(global_score)])
+
+            # Aggregate scores for all agents
+            episode_score = (sum(agent[0].snake.score for agent in agents) / len(agents))
+            total_score += episode_score
+            global_score.append(episode_score)
+
+            if len(global_score) > 500:
+                global_score.pop(0)
+
+            print(f"Episode {episode + 1}/{num_episodes} completed")
+            print(f"Global Score: {np.average(global_score):.2f}")
+
+            high_score = max(high_score, episode_score)
+
+            if episode == num_episodes - 1:
+                self.brain.save(self.save_path, self.file_name)
+
+        self.brain.save(self.save_path, self.file_name)
+        print("Training complete. Averages:", averages)
+
+    def foodless_movement_training(self, num_episodes=10000, game_length=150, avg_reset=100, data_sample_frequency=10):
+        averages = []
+        total_score = 0
+        global_score = []
+        high_score = 0
+        previous_episode = self._get_last_episode()
+
+        for episode in range(num_episodes):
+            # Generate random map parameters and type
+            rand_X = random.randint(7, 32)
+            rand_Y = random.randint(7, 32)
+            map_type = "box"
+            map_params = (rand_X, rand_Y)
+
+            # Define agents with initial positions
+            agents = [
+                (TrainingAIAgentNoFood(self.brain, self.experience_manager, 0.1, move_picking_strategy=PickDynamic()),
+                 rand_X // 2,
+                 rand_Y // 2),
+            ]
+
+            # Initialize the game with multiple agents
+            game = Main(map_params, map_type, agents, game_length, 0.1)
+            game.run()
+
+            self.trainer.train()
+
+            if episode != 0 and episode % avg_reset == 0:
+                averages.append(total_score / avg_reset)
+                self.brain.save(self.save_path, self.snapshot_name)
+                total_score = 0
+                print(f"High score: {high_score} =====================================")
+
+            if episode != 0 and episode % data_sample_frequency == 0:
+                with open(self.score_file, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([episode + previous_episode, np.average(global_score)])
+
+            # Aggregate scores for all agents
+            episode_score = (sum(agent[0].snake.score for agent in agents) / len(agents))
+            total_score += episode_score
+            global_score.append(episode_score)
+
+            if len(global_score) > 500:
+                global_score.pop(0)
+
+            print(f"Episode {episode + 1}/{num_episodes} completed")
+            print(f"Global Score: {np.average(global_score):.2f}")
+
+            high_score = max(high_score, episode_score)
+
+            if episode == num_episodes - 1:
+                self.brain.save(self.save_path, self.file_name)
+
+        self.brain.save(self.save_path, self.file_name)
+        print("Training complete. Averages:", averages)

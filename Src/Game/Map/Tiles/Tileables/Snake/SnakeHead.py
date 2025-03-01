@@ -21,21 +21,17 @@ class SnakeHead(SnakePart):
             if self.next is not None:
                 snake.death_observer.notify()
                 snake.head.tile.set_content(self)
-                snake.head.tile = None
                 snake.dead = True
             else:
                 dir_dif = (snake.head.direction[0] - self.snake.head.direction[0], snake.head.direction[1] - self.snake.head.direction[1])
                 if dir_dif == (0, 0):
                     snake.death_observer.notify()
                     self.snake.death_observer.notify()
-                    self.snake.head.tile = None
                     snake.head.tile = None
                 return
         else:
             self.snake.death_observer.notify()
-            self.snake.head.tile = None
             snake.death_observer.notify()
-            snake.head.tile = None
             self.snake.dead = True
             snake.dead = True
 

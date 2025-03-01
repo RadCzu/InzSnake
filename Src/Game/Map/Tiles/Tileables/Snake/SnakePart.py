@@ -47,16 +47,13 @@ class SnakePart(ITileable, ABC):
             return self.get_next().get_second_to_last()
 
     def interact(self, snake):
-        if not self.snake.moved and self.next is not None:
-            snake.death_observer.notify()
-        if not self.is_part_of_snake(snake):
-            self.tile = snake.head.tile
-            snake.head.tile.set_content(self)
-            snake.head.tile = None
+        if self.next is None and self.snake.moved is False:
+            return
         else:
             snake.death_observer.notify()
+            snake.head.tile.set_content(self)
             snake.head.tile = None
-        snake.dead = True
+
 
     def is_part_of_snake(self, snake):
         """

@@ -1,3 +1,5 @@
+import math
+
 from Src.Game.Agents.IAgent import IAgent
 from Src.Game.Agents.TrainingAIAgent import TrainingAIAgent
 from Src.Game.Game import Game
@@ -52,33 +54,65 @@ class Main:
                 self.game.game_over()
             self.turn += 1
 
-            longest_len = 0
-            longest_agent = None
             for agent in self.agents:
-                if agent.snake.length > longest_len:
-                    longest_len = agent.snake.length
-                if agent.snake.head.tile is None and agent.snake.dead == False:
-                    here = "here"
-                    self.game.map.print_map()
                 if agent.snake.dead:
                     living = living - 1
                     continue
                 else:
                     agent.make_decision(self.game)
+
+                    # training actions before a move is made
+                    if isinstance(agent, TrainingAIAgent) and agent.snake.dead == False:
+                        snake_x, snake_y = agent.snake.head.get_tile().get_position()
+                        closest_food_objects = self.game.get_n_closest_food_items(4, snake_x, snake_y)
+                        food_coordinates = []
+                        for food_object in closest_food_objects:
+                            (food_x, food_y) = food_object.get_tile().get_position()
+                            food_coordinates.append((food_x, food_y))
+                        _food_positions_1 = self._get_food_positions(agent, food_coordinates)
+
                     self.game.update(agent.snake)
+                    if agent.snake.dead:
+                        here = "here"
+
+                    # training actions after a move is made
                     if isinstance(agent, TrainingAIAgent):
-                        agent.add_brain_experience(agent.state_hold, agent.action_hold, agent.previous_reward, agent.done_hold)
+                        if agent.snake.dead is False:
+                            food_positions_2 = self._get_food_positions(agent, food_coordinates)
+
+                            for i in range(len(food_positions_2)):
+                                food_distance_1 = _food_positions_1[i]
+                                food_distance_2 = food_positions_2[i]
+                                if food_distance_1 == 0:
+                                    agent.reward(food_distance_2 * -1)
+                                else:
+                                    proximity_reward = ((food_distance_1 - food_distance_2) / food_distance_1)
+                                    agent.reward(proximity_reward)
+
+                        agent.add_brain_experience(agent.state_hold, agent.previous_reward, agent.is_done())
                         agent.previous_reward = agent.cookies
 
-            if isinstance(longest_agent, TrainingAIAgent):
+                        if agent.snake.dead:
+                            agent.add_last_state(self.game)
 
-                longest_agent.on_winning.notify()
 
             self.game.snakeEliminator.notify()
             self.game.snakeEliminator = Observer()
 
         for agent in self.agents:
             agent.on_game_over(self.game)
+
+    def _get_food_positions(self, agent: TrainingAIAgent, food_coordinates):
+        food_positions = []
+        if agent.snake.head.get_tile() is None:
+            snake_x, snake_y = agent.snake.last_tile.get_position()
+        else:
+            snake_x, snake_y = agent.snake.head.get_tile().get_position()
+        for food_coordinate in food_coordinates:
+            food_x, food_y = food_coordinate
+            food_distance = math.sqrt((food_x - snake_x) ** 2 + (food_y - snake_y) ** 2)
+            food_positions.append(food_distance)
+        return food_positions
 
     def run_with_print(self):
         self.game = self.set_up()
@@ -94,14 +128,7 @@ class Main:
                 self.game.game_over()
             self.turn += 1
 
-            longest_len = 0
-            longest_agent = None
-
             for i in range(len(self.agents)):
-                if self.agents[i].snake.length > longest_len:
-                    agent = self.agents[i]
-                    longest_len = agent.snake.length
-                    longest_agent = agent
                 if self.agents[i].snake.dead:
                     living = living - 1
                     continue
@@ -111,9 +138,6 @@ class Main:
                     print(f"Agent {i}:")
                     print("Q Values: ")
                     print(q_vals)
-
-            if isinstance(longest_agent, TrainingAIAgent):
-                longest_agent.on_winning.notify()
 
             self.game.snakeEliminator.notify()
             self.game.snakeEliminator = Observer()

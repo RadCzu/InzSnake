@@ -63,9 +63,14 @@ class SnakeBrain(nn.Module):
         x_distance = torch.cat([distance_from_walls, move_direction], dim=1)
         x_distance = F.relu(self.wall_distance(x_distance))
 
-        # Process Nearest Food Items (5x2 array: x, y positions of food items)
+        # Process Nearest Food Items (3x5 array)
         x_food = food_info.view(food_info.size(0), -1)
         x_food = torch.cat([x_food, move_direction], dim=1)
+        expected_input_dim = self.closest_food.in_features  # Typically 19
+        if x_food.shape[1] != expected_input_dim:
+            print(f"Shape mismatch detected! x_food.shape: {x_food.shape}, expected: (N, {expected_input_dim})")
+            print(f"food_info.shape: {food_info.shape}, move_direction.shape: {move_direction.shape}")
+
         x_food = F.leaky_relu(self.closest_food(x_food), negative_slope=0.01)
 
         # Process Move History (20 moves × 4 values each)
